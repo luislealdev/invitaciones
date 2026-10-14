@@ -11,8 +11,6 @@ export default function AuthPage() {
     const [state, formAction, isPending] = useActionState(login, undefined);
     const [showPassword, setShowPassword] = useState(false);
 
-    console.log(bcrypt.hashSync('teamohermosa'))
-
     return (
         <div className="relative min-h-screen w-full bg-[#f1ede4] crumpled-paper-texture overflow-hidden flex flex-col items-center justify-center p-4 sm:p-6">
             {/* Paper Crumple & Crease Overlays */}

@@ -530,7 +530,7 @@ export default function Page() {
             <div className="mt-2.5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/75 backdrop-blur-xs border border-pink-200/80 shadow-xs">
               <Clock3 className="w-3.5 h-3.5 text-pink-500" />
               <span className="text-xs sm:text-sm font-semibold tracking-wider text-neutral-700 uppercase font-sans">
-                Viernes • 17:00 hrs (5:00 PM)
+                Sábado • 17:00 hrs (5:00 PM)
               </span>
             </div>
           </div>
@@ -850,7 +850,7 @@ export default function Page() {
                     />
                   </div>
                   <p className="mt-3 font-serif italic text-xs text-neutral-700">
-                    Viernes 24 de Octubre ✨
+                    Sábado 24 de Octubre ✨
                   </p>
                 </div>
               </ScrollReveal>
@@ -1075,7 +1075,7 @@ export default function Page() {
                     Celebración 23 de Citla
                   </h3>
                   <p className="text-xs text-neutral-500 mt-0.5">
-                    Viernes 24 de Octubre • 17:00 hrs (5:00 PM)
+                    Sábado 24 de Octubre • 17:00 hrs (5:00 PM)
                   </p>
                 </div>
 

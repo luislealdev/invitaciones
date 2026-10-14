@@ -133,7 +133,7 @@ export default function InvitationCard({
       icon: CalendarDays,
       label: 'Fecha',
       value: '24 de Octubre',
-      subtext: 'Viernes de fiesta',
+      subtext: 'Sábado de fiesta',
       accent: 'text-pink-600 bg-pink-100/80 border-pink-200'
     },
     {
@@ -169,11 +169,10 @@ export default function InvitationCard({
 
   return (
     <div
-      className={`relative w-full max-w-[430px] mx-auto bg-[#fffafc] rounded-[2.5rem] overflow-hidden text-[#3b2233] selection:bg-pink-200 selection:text-pink-900 ${
-        isEmbedded
+      className={`relative w-full max-w-[430px] mx-auto bg-[#fffafc] rounded-[2.5rem] overflow-hidden text-[#3b2233] selection:bg-pink-200 selection:text-pink-900 ${isEmbedded
           ? 'shadow-2xl border-4 border-pink-100/90'
           : 'shadow-[0_20px_70px_rgba(219,39,119,0.18)] border border-pink-100/80'
-      }`}
+        }`}
     >
       {/* Toast Notification */}
       {showSuccessToast && (
@@ -257,7 +256,7 @@ export default function InvitationCard({
 
       {/* Hero Header with Disco Ball, Photo & Inflated Silver Foil Header */}
       <header className="relative pt-3 pb-8 px-6 bg-gradient-to-b from-[#fce7f3]/90 via-[#fdf2f8] to-[#fffafc] text-center overflow-hidden">
-        
+
         {/* Glittering Disco Ball Graphic in Corner */}
         <div className="absolute -top-1 -right-1 z-10 animate-float-slow">
           <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-slate-300 via-white to-pink-200 border-2 border-white shadow-md flex items-center justify-center text-2xl animate-disco">
@@ -284,7 +283,7 @@ export default function InvitationCard({
 
         {/* Birthday Girl Childhood Photo (/img/IMG_9925.PNG) with Pink Party Hat Overlay & Silver Stars */}
         <div className="relative z-10 mt-6 mx-auto w-44 h-44 sm:w-48 sm:h-48">
-          
+
           {/* Digital Pink Party Hat Overlay */}
           <div className="absolute -top-7 left-1/2 -translate-x-1/2 z-20 pointer-events-none drop-shadow-md animate-float-slow">
             <div className="relative flex flex-col items-center">
@@ -333,7 +332,7 @@ export default function InvitationCard({
 
       {/* Main Content Body */}
       <div className="px-5 py-6 space-y-5">
-        
+
         {/* Event Details Grid */}
         <section aria-labelledby="detalles-evento" className="space-y-3">
           <div className="flex items-center justify-between px-1">
@@ -352,9 +351,8 @@ export default function InvitationCard({
               return (
                 <div
                   key={idx}
-                  className={`relative p-3.5 rounded-2xl bg-white border border-pink-100/90 shadow-xs hover:border-pink-300 transition-all ${
-                    isFullSpan ? 'sm:col-span-2 bg-gradient-to-r from-white via-pink-50/40 to-white' : ''
-                  }`}
+                  className={`relative p-3.5 rounded-2xl bg-white border border-pink-100/90 shadow-xs hover:border-pink-300 transition-all ${isFullSpan ? 'sm:col-span-2 bg-gradient-to-r from-white via-pink-50/40 to-white' : ''
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`p-2.5 rounded-xl border flex-shrink-0 ${detail.accent}`}>
@@ -661,7 +659,7 @@ export default function InvitationCard({
             {/* Stylized simulated Map view */}
             <div className="w-full h-44 rounded-2xl bg-[#e5f0ec] border-2 border-pink-200 relative overflow-hidden flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-40"></div>
-              
+
               {/* Roads graphic mock */}
               <div className="absolute top-0 bottom-0 left-1/3 w-6 bg-white shadow-xs"></div>
               <div className="absolute left-0 right-0 top-1/2 h-6 bg-white shadow-xs"></div>
