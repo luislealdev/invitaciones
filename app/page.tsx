@@ -22,6 +22,7 @@ import {
   Heart,
   Volume2
 } from 'lucide-react'
+import { createUpdateMessage } from '@/actions/message'
 
 // ================= COMPONENTE DE ANIMACIÓN AL HACER SCROLL =================
 function ScrollReveal({
@@ -173,16 +174,20 @@ export default function Page() {
   const [rsvpGuests, setRsvpGuests] = useState('1')
   const [rsvpMessage, setRsvpMessage] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [copiedClabe, setCopiedClabe] = useState(false)
   const [isPlayingMusic, setIsPlayingMusic] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Scroll tracking
   const [scrollProgress, setScrollProgress] = useState(0)
   const [showFloatingBar, setShowFloatingBar] = useState(false)
 
-  // Datos ficticios configurables
+  // Datos configurables
   const addressText = 'Priv. Misión de Santa Ana, fracc La Misión'
+  const mapsUrl = 'https://maps.app.goo.gl/F9DQ2ToXdvTYGsKD8'
+  const wazeUrl = 'https://waze.com/ul?ll=20.5479147,-100.8321122&navigate=yes'
   const bankClabe = '012 180 01548976231 4'
 
   // Contador regresivo interactivo
@@ -220,6 +225,60 @@ export default function Page() {
     return () => clearInterval(interval)
   }, [])
 
+  // Reproducción de música al cargar o al primer click/interacción
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    let userInteracted = false
+
+    const playAudio = async () => {
+      try {
+        await audio.play()
+        setIsPlayingMusic(true)
+      } catch {
+        // Autoplay bloqueado por políticas del navegador sin interacción previa.
+        // Se activa en el primer toque, clic o interacción del usuario.
+        const handleFirstInteraction = () => {
+          if (userInteracted) return
+          userInteracted = true
+          audio.play().then(() => {
+            setIsPlayingMusic(true)
+          }).catch(() => { })
+          removeListeners()
+        }
+
+        const removeListeners = () => {
+          window.removeEventListener('click', handleFirstInteraction)
+          window.removeEventListener('touchstart', handleFirstInteraction)
+          window.removeEventListener('scroll', handleFirstInteraction)
+          window.removeEventListener('keydown', handleFirstInteraction)
+        }
+
+        window.addEventListener('click', handleFirstInteraction, { once: true, passive: true })
+        window.addEventListener('touchstart', handleFirstInteraction, { once: true, passive: true })
+        window.addEventListener('scroll', handleFirstInteraction, { once: true, passive: true })
+        window.addEventListener('keydown', handleFirstInteraction, { once: true, passive: true })
+      }
+    }
+
+    playAudio()
+  }, [])
+
+  const toggleMusic = () => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (isPlayingMusic) {
+      audio.pause()
+      setIsPlayingMusic(false)
+    } else {
+      audio.play()
+        .then(() => setIsPlayingMusic(true))
+        .catch((err) => console.log('Audio play error:', err))
+    }
+  }
+
   const handleCopyAddress = () => {
     if (typeof navigator !== 'undefined') {
       navigator.clipboard.writeText(addressText)
@@ -236,16 +295,34 @@ export default function Page() {
     }
   }
 
-  const handleRsvpSubmit = (e: React.FormEvent) => {
+  const handleRsvpSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitted(true)
-    setTimeout(() => {
-      setIsRsvpOpen(false)
-      setIsSubmitted(false)
-      setRsvpName('')
-      setRsvpPhone('')
-      setRsvpMessage('')
-    }, 2500)
+    setIsSubmitting(true)
+    try {
+      if (rsvpName.trim()) {
+        const fullContent = rsvpMessage.trim()
+          ? `${rsvpMessage.trim()}`
+          : `¡Confirmado! Asistiré al festejo`
+
+        await createUpdateMessage({
+          name: rsvpName.trim(),
+          content: fullContent
+        })
+      }
+      setIsSubmitted(true)
+    } catch (err) {
+      console.error('Error al guardar mensaje:', err)
+      setIsSubmitted(true)
+    } finally {
+      setIsSubmitting(false)
+      setTimeout(() => {
+        setIsRsvpOpen(false)
+        setIsSubmitted(false)
+        setRsvpName('')
+        setRsvpPhone('')
+        setRsvpMessage('')
+      }, 2500)
+    }
   }
 
   const handleWhatsAppRsvp = () => {
@@ -266,26 +343,46 @@ export default function Page() {
         style={{ width: `${scrollProgress}%` }}
       />
 
+      {/* Elemento de Audio de fondo */}
+      <audio
+        ref={audioRef}
+        src="/songs/beso.mp3"
+        preload="auto"
+        loop
+        playsInline
+        onPlay={() => setIsPlayingMusic(true)}
+        onPause={() => setIsPlayingMusic(false)}
+      />
+
       {/* 2. Reproductor flotante de Música / Ambiente */}
       <div className="fixed top-4 right-4 z-40 animate-enter-down">
         <button
           type="button"
-          onClick={() => setIsPlayingMusic(!isPlayingMusic)}
+          onClick={toggleMusic}
+          aria-label={isPlayingMusic ? 'Pausar música' : 'Reproducir música'}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-neutral-300/80 shadow-md text-neutral-800 text-xs font-semibold hover:bg-white active:scale-95 transition cursor-pointer"
         >
           {isPlayingMusic ? (
-            <div className="flex items-end gap-0.5 h-3.5 px-0.5">
-              <span className="w-0.5 bg-pink-500 rounded-full anim-sound-1" />
-              <span className="w-0.5 bg-pink-500 rounded-full anim-sound-2" />
-              <span className="w-0.5 bg-pink-500 rounded-full anim-sound-3" />
-              <span className="w-0.5 bg-pink-500 rounded-full anim-sound-4" />
-            </div>
+            <>
+              <div className="flex items-end gap-0.5 h-3.5 px-0.5">
+                <span className="w-0.5 bg-pink-500 rounded-full anim-sound-1" />
+                <span className="w-0.5 bg-pink-500 rounded-full anim-sound-2" />
+                <span className="w-0.5 bg-pink-500 rounded-full anim-sound-3" />
+                <span className="w-0.5 bg-pink-500 rounded-full anim-sound-4" />
+              </div>
+              <Pause className="w-3 h-3 text-neutral-500 ml-0.5" />
+              <span className="hidden sm:inline text-[11px] font-sans">
+                Sonando: Beso
+              </span>
+            </>
           ) : (
-            <Play className="w-3.5 h-3.5 text-neutral-600 fill-neutral-600" />
+            <>
+              <Play className="w-3.5 h-3.5 text-neutral-600 fill-neutral-600" />
+              <span className="hidden sm:inline text-[11px] font-sans">
+                Reproducir Música
+              </span>
+            </>
           )}
-          <span className="hidden sm:inline text-[11px] font-sans">
-            {isPlayingMusic ? 'Sonando: Norteño Mix' : 'Poner Rolita'}
-          </span>
         </button>
       </div>
 
@@ -616,7 +713,7 @@ export default function Page() {
                         Música, Baile & Festejo
                       </h3>
                       <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                        Seguimos con el ambiente, la música y la plática toda la noche.
+                        Seguimos con el ambiente, la música y la plática.
                       </p>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0 border border-purple-200/60">
@@ -648,7 +745,7 @@ export default function Page() {
 
               <div className="p-4 rounded-2xl bg-[#faf6f0] border border-stone-200 flex items-center gap-3.5 my-3">
                 <div className="w-11 h-11 rounded-xl bg-white text-stone-800 flex items-center justify-center shadow-xs flex-shrink-0 border border-stone-200 text-xl">
-                  💃🕺
+                  💃
                 </div>
                 <div>
                   <p className="text-sm font-bold text-neutral-800">Sin código de vestimenta</p>
@@ -675,22 +772,16 @@ export default function Page() {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
                       Barra & Drinks
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700 border border-neutral-200">
-                      B.Y.O.B.
-                    </span>
                   </div>
                   <p className="text-sm font-bold text-neutral-900 mt-0.5">
                     Trae tus bebidas favoritas
-                  </p>
-                  <p className="text-xs text-neutral-600 mt-0.5 leading-relaxed">
-                    Hielos, mezcladores, refrescos y vasos corren por cuenta de la casa.
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Food Card */}
-            <div className="p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-neutral-200/90 shadow-xs hover:shadow-md transition">
+            {/* <div className="p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-neutral-200/90 shadow-xs hover:shadow-md transition">
               <div className="flex items-start gap-3.5">
                 <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-200/60 flex items-center justify-center flex-shrink-0 shadow-xs">
                   <Sparkles className="w-5 h-5" />
@@ -707,7 +798,7 @@ export default function Page() {
                   </p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </ScrollReveal>
 
           {/* ================= SECCIÓN 4: GALERÍA POLAROID REEL (CON TAPE) ================= */}
@@ -719,7 +810,7 @@ export default function Page() {
               </span>
               <span className="w-6 h-0.5 bg-pink-400 rounded-full" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 maliatons mb-8">
+            <h2 className="text-3xl sm:text-7xl font-bold text-neutral-900 maliatons mb-8">
               Capítulo 23 de Citla
             </h2>
 
@@ -750,13 +841,13 @@ export default function Page() {
                 <div className="bg-white p-3.5 pb-5 rounded-2xl shadow-lg border border-neutral-200/80 rotate-[3deg] group-hover:rotate-0 transition-transform duration-300">
                   <WashiTape className="-mt-6 mb-2" />
                   <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-amber-50 flex flex-col items-center justify-center p-4 text-center">
-                    <span className="text-4xl mb-2">🪗🤠✨</span>
-                    <p className="text-sm font-bold text-neutral-900">
-                      Norteño, Botas & Brindis
-                    </p>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      See you on the dance floor
-                    </p>
+                    <Image
+                      src="/img/norte-bbs.jpeg"
+                      alt="norte-bbs"
+                      width={400}
+                      height={400}
+                      className="object-cover w-full h-full"
+                    />
                   </div>
                   <p className="mt-3 font-serif italic text-xs text-neutral-700">
                     Viernes 24 de Octubre ✨
@@ -832,18 +923,23 @@ export default function Page() {
               </div>
 
               {/* Mapa estilizado */}
-              <div className="w-full h-36 rounded-2xl bg-[#e8ede9] border border-stone-300 relative overflow-hidden flex items-center justify-center p-4">
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="group relative block w-full h-36 rounded-2xl bg-[#e8ede9] border border-stone-300 overflow-hidden p-4 transition hover:border-pink-300 hover:shadow-md cursor-pointer"
+              >
                 <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:16px_16px] opacity-25"></div>
                 <div className="absolute top-0 bottom-0 left-1/3 w-6 bg-white/90 shadow-xs"></div>
                 <div className="absolute left-0 right-0 top-1/2 h-6 bg-white/90 shadow-xs"></div>
 
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="px-3 py-1 bg-neutral-900 text-amber-50 text-[10px] font-bold rounded-full shadow-md whitespace-nowrap mb-1">
-                    🎉 Fiesta #23 Citla
+                <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                  <div className="px-3 py-1 bg-neutral-900 text-amber-50 text-[10px] font-bold rounded-full shadow-md whitespace-nowrap mb-1 group-hover:bg-pink-600 transition">
+                    🎉 Fiesta #23 Citla • Abrir Mapa
                   </div>
                   <MapPin className="w-6 h-6 text-pink-600 fill-pink-100 drop-shadow animate-bounce" />
                 </div>
-              </div>
+              </a>
 
               <div className="mt-3 p-3 rounded-xl bg-amber-50/80 text-xs text-amber-900 border border-amber-200/70">
                 💡 <strong>Al estar fuera de la privada:</strong> Mándame un mensaje a mi o a alguien de los invitados.
@@ -851,7 +947,7 @@ export default function Page() {
 
               <div className="mt-3.5 grid grid-cols-2 gap-2">
                 <a
-                  href="https://maps.google.com/?q=Priv.+Mision+de+Santa+Ana+fracc+La+Mision"
+                  href={mapsUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold text-center flex items-center justify-center gap-1.5 shadow-xs transition"
@@ -860,7 +956,7 @@ export default function Page() {
                   <ExternalLink className="w-3 h-3 text-neutral-400" />
                 </a>
                 <a
-                  href="https://waze.com/ul?q=Priv.+Mision+de+Santa+Ana+fracc+La+Mision"
+                  href={wazeUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="py-2.5 rounded-xl bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold text-center flex items-center justify-center gap-1.5 border border-neutral-300 shadow-xs transition"
@@ -876,12 +972,9 @@ export default function Page() {
           <ScrollReveal direction="up" className="w-full mt-14 mb-16 text-center">
             <div className="p-8 rounded-3xl bg-neutral-950 text-amber-50 shadow-xl border border-neutral-800 relative overflow-hidden">
               <span className="text-3xl mb-2 inline-block">💖🤠✨</span>
-              <h2 className="text-3xl font-bold tracking-wide maliatons text-white">
-                ¿Nos acompañas?
+              <h2 className="text-7xl font-bold tracking-wide maliatons text-white">
+                ¿Me acompañas?
               </h2>
-              <p className="text-xs text-stone-300 mt-2 max-w-xs mx-auto leading-relaxed">
-                Por favor confírmanos antes del 20 de Octubre para contemplarte en el banquete y amenidades.
-              </p>
 
               <div className="mt-6 flex flex-col gap-2.5">
                 <button
@@ -893,14 +986,14 @@ export default function Page() {
                   <span>Confirmar mi Asistencia</span>
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={handleWhatsAppRsvp}
                   className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>Avisar directamente por WhatsApp</span>
-                </button>
+                </button> */}
               </div>
             </div>
 
@@ -961,7 +1054,7 @@ export default function Page() {
                 <p className="text-xs text-neutral-600 leading-relaxed px-2">
                   ¡Listo {rsvpName || ''}! Nos vemos el 24 de Octubre para festejar a Citla en grande.
                 </p>
-                <div className="pt-2">
+                {/* <div className="pt-2">
                   <button
                     type="button"
                     onClick={handleWhatsAppRsvp}
@@ -970,7 +1063,7 @@ export default function Page() {
                     <MessageCircle className="w-4 h-4" />
                     <span>Avisar también por WhatsApp</span>
                   </button>
-                </div>
+                </div> */}
               </div>
             ) : (
               <form onSubmit={handleRsvpSubmit} className="space-y-3.5">
@@ -1000,7 +1093,7 @@ export default function Page() {
                   />
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-xs font-bold text-neutral-700 mb-1">
                     Teléfono / WhatsApp *
                   </label>
@@ -1012,9 +1105,9 @@ export default function Page() {
                     placeholder="Ej. 81 1234 5678"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
                   />
-                </div>
+                </div> */}
 
-                <div>
+                {/* <div>
                   <label className="block text-xs font-bold text-neutral-700 mb-1">
                     Número de asistentes
                   </label>
@@ -1028,7 +1121,7 @@ export default function Page() {
                     <option value="3">3 personas</option>
                     <option value="4">4 o más personas</option>
                   </select>
-                </div>
+                </div> */}
 
                 <div>
                   <label className="block text-xs font-bold text-neutral-700 mb-1">
@@ -1046,20 +1139,21 @@ export default function Page() {
                 <div className="pt-1 space-y-2">
                   <button
                     type="submit"
-                    className="w-full py-3 rounded-xl bg-neutral-900 hover:bg-black text-amber-50 font-bold text-sm shadow-md transition active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                    disabled={isSubmitting}
+                    className="w-full py-3 rounded-xl bg-neutral-900 hover:bg-black text-amber-50 font-bold text-sm shadow-md transition active:scale-95 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                   >
                     <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Confirmar Asistencia</span>
+                    <span>{isSubmitting ? 'Guardando confirmación...' : 'Confirmar Asistencia'}</span>
                   </button>
 
-                  <button
+                  {/* <button
                     type="button"
                     onClick={handleWhatsAppRsvp}
                     className="w-full py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <MessageCircle className="w-4 h-4 text-emerald-600" />
                     <span>Confirmar por WhatsApp</span>
-                  </button>
+                  </button> */}
                 </div>
               </form>
             )}
@@ -1119,18 +1213,23 @@ export default function Page() {
             </div>
 
             {/* Stylized simulated Map view */}
-            <div className="w-full h-40 mt-3 rounded-2xl bg-[#e8ede9] border border-stone-300 relative overflow-hidden flex items-center justify-center p-4">
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative block w-full h-40 mt-3 rounded-2xl bg-[#e8ede9] border border-stone-300 overflow-hidden p-4 transition hover:border-pink-300 hover:shadow-md cursor-pointer"
+            >
               <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:16px_16px] opacity-25"></div>
               <div className="absolute top-0 bottom-0 left-1/3 w-7 bg-white/90 shadow-xs"></div>
               <div className="absolute left-0 right-0 top-1/2 h-7 bg-white/90 shadow-xs"></div>
 
-              <div className="relative z-10 flex flex-col items-center">
-                <div className="px-3 py-1 bg-neutral-900 text-amber-50 text-[11px] font-bold rounded-full shadow-md whitespace-nowrap mb-1">
-                  Fiesta 23 de Citla
+              <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                <div className="px-3 py-1 bg-neutral-900 text-amber-50 text-[11px] font-bold rounded-full shadow-md whitespace-nowrap mb-1 group-hover:bg-pink-600 transition">
+                  Fiesta 23 de Citla • Abrir Mapa
                 </div>
                 <MapPin className="w-7 h-7 text-pink-600 fill-pink-100 drop-shadow animate-bounce" />
               </div>
-            </div>
+            </a>
 
             <div className="mt-3.5 p-3 rounded-xl bg-amber-50/80 text-xs text-amber-900 border border-amber-200/70">
               💡 <strong>Al estar fuera de la privada:</strong> Mándame un mensaje a mi o a alguien de los invitados.
@@ -1138,7 +1237,7 @@ export default function Page() {
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <a
-                href="https://maps.google.com/?q=Priv.+Mision+de+Santa+Ana+fracc+La+Mision"
+                href={mapsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold text-center flex items-center justify-center gap-1.5 shadow-xs transition"
@@ -1147,7 +1246,7 @@ export default function Page() {
                 <ExternalLink className="w-3 h-3 text-neutral-400" />
               </a>
               <a
-                href="https://waze.com/ul?q=Priv.+Mision+de+Santa+Ana+fracc+La+Mision"
+                href={wazeUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="py-2.5 rounded-xl bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold text-center flex items-center justify-center gap-1.5 border border-neutral-300 shadow-xs transition"
