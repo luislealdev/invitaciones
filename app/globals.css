@@ -224,6 +224,115 @@ body {
   animation-delay: 1.8s;
 }
 
+/* Page Load Entrance Animations */
+@keyframes enterFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enterFadeDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enterScaleUp {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseGently {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.animate-enter-up {
+  animation: enterFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-enter-down {
+  animation: enterFadeDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-enter-scale {
+  animation: enterScaleUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-pulse-gentle {
+  animation: pulseGently 3s ease-in-out infinite;
+}
+
+.anim-delay-100 { animation-delay: 100ms; }
+.anim-delay-200 { animation-delay: 200ms; }
+.anim-delay-300 { animation-delay: 300ms; }
+.anim-delay-400 { animation-delay: 400ms; }
+.anim-delay-500 { animation-delay: 500ms; }
+.anim-delay-600 { animation-delay: 600ms; }
+.anim-delay-700 { animation-delay: 700ms; }
+.anim-delay-800 { animation-delay: 800ms; }
+
+/* Sound Equalizer Bars Animation */
+@keyframes soundBar1 {
+  0%, 100% { height: 6px; }
+  50% { height: 18px; }
+}
+@keyframes soundBar2 {
+  0%, 100% { height: 16px; }
+  50% { height: 8px; }
+}
+@keyframes soundBar3 {
+  0%, 100% { height: 10px; }
+  50% { height: 20px; }
+}
+@keyframes soundBar4 {
+  0%, 100% { height: 14px; }
+  50% { height: 6px; }
+}
+
+.anim-sound-1 { animation: soundBar1 0.75s ease-in-out infinite; }
+.anim-sound-2 { animation: soundBar2 0.9s ease-in-out infinite; }
+.anim-sound-3 { animation: soundBar3 0.65s ease-in-out infinite; }
+.anim-sound-4 { animation: soundBar4 0.8s ease-in-out infinite; }
+
+/* Scroll Indicator Bounce */
+@keyframes scrollIndicator {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50% { transform: translateY(6px); opacity: 0.3; }
+}
+.animate-scroll-bounce {
+  animation: scrollIndicator 1.8s ease-in-out infinite;
+}
+
+/* Timeline Dot Glow */
+@keyframes timelinePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(219, 39, 119, 0.5); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(219, 39, 119, 0); }
+}
+.animate-timeline-dot {
+  animation: timelinePulse 2.4s infinite;
+}
+
 /* Glassmorphism & Soft Shadows */
 .glass-pink {
   background: rgba(255, 250, 252, 0.88);
