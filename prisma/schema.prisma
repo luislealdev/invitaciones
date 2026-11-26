@@ -2,25 +2,242 @@ generator client {
     provider = "prisma-client-js"
 }
 
-// Data source configuration (PostgreSQL database)
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
 }
 
-model User {
-    id        Int      @id @default(autoincrement())
-    name      String
-    email     String
-    password  String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+//////////////////////////
+// ENUMS
+//////////////////////////
+
+enum Gender {
+    MALE
+    FEMALE
+    OTHER
 }
 
-model Message {
-    id        Int      @id @default(autoincrement())
-    name      String
-    content   String
+enum Role {
+    ADMIN
+    USER
+    GUEST
+}
+
+enum EventType {
+    WEDDING
+    BIRTHDAY
+    QUINCEANERA
+    GRADUATION
+    BAPTISM
+    BABY_SHOWER
+    CORPORATE
+    OTHER
+}
+
+enum BlockType {
+    HERO
+    TEXT
+    COUNTDOWN
+    LOCATION
+    ITINERARY
+    GALLERY
+    GIFTS
+    DRESS_CODE
+    ATTENDANCE
+    FOOTER
+}
+
+enum InvitationStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+enum AttendanceStatus {
+    PENDING
+    CONFIRMED
+    DECLINED
+}
+
+//////////////////////////
+// USERS
+//////////////////////////
+
+model User {
+    id       Int     @id @default(autoincrement())
+    name     String
+    email    String?
+    phone    String?
+    password String?
+    gender   Gender?
+    role     Role    @default(GUEST)
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    savedTemplates      Template[]           @relation("SavedTemplates")
+    messages            Message[]
+    attendance          Attendance[]
+    invitations         Invitation[]         @relation("UserInvitations")
+    passwordResetTokens PasswordResetToken[]
+}
+
+//////////////////////////
+// MESSAGES
+//////////////////////////
+
+model Message {
+    id           Int    @id @default(autoincrement())
+    invitationId Int?
+    guestId      Int?
+    name         String
+    content      String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+    guest        User?       @relation(fields: [guestId], references: [id], onDelete: SetNull)
+    attendance   Attendance? @relation(fields: [attendanceId], references: [id])
+    attendanceId Int?
+
+    @@index([invitationId])
+    @@index([guestId])
+}
+
+//////////////////////////
+// TEMPLATES
+//////////////////////////
+
+model Template {
+    id          Int       @id @default(autoincrement())
+    name        String
+    slug        String    @unique
+    description String?
+    previewUrl  String?
+    eventType   EventType
+    theme       Json      @default("{}")
+    isActive    Boolean   @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    savedBy     User[]          @relation("SavedTemplates")
+    blocks      TemplateBlock[]
+    invitations Invitation[]
+
+    @@index([eventType, isActive])
+}
+
+model TemplateBlock {
+    id         Int       @id @default(autoincrement())
+    templateId Int
+    type       BlockType
+    variant    String    @default("default")
+    position   Int
+    content    Json      @default("{}")
+    styles     Json      @default("{}")
+    isVisible  Boolean   @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    template Template @relation(fields: [templateId], references: [id])
+
+    @@index([templateId, position])
+}
+
+//////////////////////////
+// INVITATIONS
+//////////////////////////
+
+model Invitation {
+    id          Int              @id @default(autoincrement())
+    userId      Int
+    templateId  Int
+    name        String
+    slug        String           @unique
+    eventType   EventType
+    eventDate   DateTime?
+    timezone    String           @default("America/Mexico_City")
+    soundtrack  String?
+    theme       Json             @default("{}")
+    status      InvitationStatus @default(DRAFT)
+    publishedAt DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user User @relation("UserInvitations", fields: [userId], references: [id])
+
+    template Template @relation(fields: [templateId], references: [id])
+
+    blocks      InvitationBlock[]
+    messages    Message[]
+    attendances Attendance[]
+
+    @@index([userId, status])
+    @@index([templateId])
+}
+
+model InvitationBlock {
+    id           Int       @id @default(autoincrement())
+    invitationId Int
+    type         BlockType
+    variant      String    @default("default")
+    position     Int
+    content      Json      @default("{}")
+    styles       Json      @default("{}")
+    isVisible    Boolean   @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    invitation Invitation @relation(fields: [invitationId], references: [id])
+
+    @@index([invitationId, position])
+}
+
+//////////////////////////
+// Attendance
+//////////////////////////
+
+model Attendance {
+    id                 Int              @id @default(autoincrement())
+    guestId            Int
+    invitationId       Int
+    status             AttendanceStatus @default(PENDING)
+    maxAttendees       Int              @default(1)
+    attendeeCount      Int              @default(0)
+    respondedAt        DateTime?
+    attendanceDeadline DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    guest      User       @relation(fields: [guestId], references: [id])
+    invitation Invitation @relation(fields: [invitationId], references: [id])
+
+    messages Message[]
+
+    @@unique([invitationId, guestId])
+    @@index([guestId])
+    @@index([invitationId, status])
+}
+
+//////////////////////////
+// Password Reset Tokens
+//////////////////////////
+
+model PasswordResetToken {
+    id             String   @id @default(uuid())
+    userId         Int
+    token          String   @unique
+    createdAt      DateTime @default(now())
+    expirationDate DateTime
+
+    user User @relation(fields: [userId], references: [id])
+
+    @@index([token])
+    @@index([userId])
 }
